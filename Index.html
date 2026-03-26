@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>mePlayer</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: Arial, sans-serif;
+}
+
+body{
+    background:#0d1117;
+    color:#e6e6e6;
+}
+
+.app{
+    display:flex;
+    height:100vh;
+}
+
+/* LEFT PANEL */
+.sidebar{
+    width:260px;
+    background:#161b22;
+    border-right:1px solid #30363d;
+    display:flex;
+    flex-direction:column;
+}
+
+.sidebar h2{
+    padding:15px;
+    color:#58a6ff;
+    border-bottom:1px solid #30363d;
+}
+
+.file-input{
+    padding:10px;
+}
+
+.file-input input{
+    width:100%;
+    background:#21262d;
+    color:#ccc;
+    border:none;
+    padding:6px;
+}
+
+.playlist{
+    flex:1;
+    overflow-y:auto;
+}
+
+.playlist div{
+    padding:10px;
+    border-bottom:1px solid #21262d;
+    cursor:pointer;
+}
+
+.playlist div:hover{
+    background:#21262d;
+}
+
+.playlist .active{
+    background:#238636;
+}
+
+/* MAIN PLAYER */
+.main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
+
+/* VIDEO AREA */
+.video-box{
+    flex:1;
+    background:black;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+video, img{
+    max-width:100%;
+    max-height:100%;
+}
+
+/* CONTROLS */
+.controls{
+    background:#161b22;
+    padding:10px;
+    border-top:1px solid #30363d;
+}
+
+.controls-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+button{
+    background:#238636;
+    border:none;
+    color:white;
+    padding:6px 10px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#2ea043;
+}
+
+input[type=range]{
+    flex:1;
+}
+
+.time{
+    font-size:13px;
+    color:#8b949e;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- LEFT -->
+    <div class="sidebar">
+        <h2>mePlayer</h2>
+
+        <div class="file-input">
+            <input type="file" id="folderInput" webkitdirectory multiple>
+        </div>
+
+        <div class="playlist" id="playlist"></div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="main">
+
+        <div class="video-box">
+            <video id="media" controls style="display:none"></video>
+            <img id="audioThumb" src="https://upload.wikimedia.org/wikipedia/commons/4/4f/Iconic_image_of_sound_waves.png">
+        </div>
+
+        <div class="controls">
+            <div class="controls-row">
+                <button onclick="togglePlay()">Play / Pause</button>
+
+                <span class="time" id="current">0:00</span>
+
+                <input type="range" id="seek" value="0">
+
+                <span class="time" id="duration">0:00</span>
+
+                <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const folderInput = document.getElementById("folderInput");
+const playlist = document.getElementById("playlist");
+const media = document.getElementById("media");
+const thumb = document.getElementById("audioThumb");
+const seek = document.getElementById("seek");
+const volume = document.getElementById("volume");
+const current = document.getElementById("current");
+const duration = document.getElementById("duration");
+
+let files = [];
+
+folderInput.addEventListener("change", () => {
+    playlist.innerHTML = "";
+    files = Array.from(folderInput.files)
+        .filter(f => f.type.startsWith("audio") || f.type.startsWith("video"));
+
+    files.forEach((file, index) => {
+        const div = document.createElement("div");
+        div.textContent = file.name;
+        div.onclick = () => playFile(index, div);
+        playlist.appendChild(div);
+    });
+});
+
+function playFile(index, element){
+    document.querySelectorAll(".playlist div").forEach(d => d.classList.remove("active"));
+    element.classList.add("active");
+
+    const file = files[index];
+    media.src = URL.createObjectURL(file);
+    media.load();
+    media.play();
+
+    if(file.type.startsWith("video")){
+        media.style.display = "block";
+        thumb.style.display = "none";
+    }else{
+        media.style.display = "none";
+        thumb.style.display = "block";
+    }
+}
+
+function togglePlay(){
+    if(media.paused) media.play();
+    else media.pause();
+}
+
+media.addEventListener("timeupdate", () => {
+    seek.value = (media.currentTime / media.duration) * 100 || 0;
+    current.textContent = format(media.currentTime);
+    duration.textContent = format(media.duration);
+});
+
+seek.addEventListener("input", () => {
+    media.currentTime = (seek.value / 100) * media.duration;
+});
+
+volume.addEventListener("input", () => {
+    media.volume = volume.value;
+});
+
+function format(t){
+    if(!t) return "0:00";
+    const m = Math.floor(t/60);
+    const s = Math.floor(t%60).toString().padStart(2,"0");
+    return m + ":" + s;
+}
+</script>
+
+</body>
+</html>
